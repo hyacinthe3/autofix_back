@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken"
-import User from "../models/userModal.js"
+import User from "../models/userModel.js"
 import dotenv from "dotenv"
 dotenv.config()
 console.log("JWT_SECRET:", process.env.JWT_SECRET);

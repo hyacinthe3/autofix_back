@@ -4,8 +4,9 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import userRouter from './routes/userRoute.js'
 import cors from "cors";
-import MechanicRouter from './routes/mechanicRoute.js';
 import { createContact, getAllContact } from './controllers/contactControllerl.js';
+import GarageRouter from './routes/garageRoute.js';
+import mechanicRoutes from './routes/mechanicRoute.js';
 
 dotenv.config();
 const port = process.env.PORT || 5000
@@ -24,9 +25,10 @@ app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use("/", userRouter);
-app.use("/mechanic", MechanicRouter);
+app.use("/garage", GarageRouter);
 app.use("/contact", createContact);
 app.use("/contact", getAllContact);
+app.use('/mechanic', mechanicRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => {

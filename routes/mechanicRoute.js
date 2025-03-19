@@ -1,11 +1,14 @@
-import express from "express";
-import { registerMechanic,MechanicLogin } from "../controllers/mechanicController.js";
-import { getAllMechanics } from '../controllers/mechanicController.js'; // Adjust path as necessary
-import upload from "../middleware/multer.js";
-const MechanicRouter = express();
+// routes/mechanicRoutes.js
+import express from 'express';
+import {registerMechanic,getAllMechanics,getMechanicById,deleteMechanicById,updateMechanicById,} from '../controllers/mechanicController.js';
 
-MechanicRouter.post("/mechaniclogin",MechanicLogin);
-MechanicRouter.post("/registerMechanic",upload.single('certification'),registerMechanic);
-MechanicRouter.get("/getAllMechanics",getAllMechanics);
+const mechanicRoutes = express.Router();
 
-export default MechanicRouter;
+mechanicRoutes.post('/register', registerMechanic);
+mechanicRoutes.get('/all', getAllMechanics);  // ✅ Change '/' to '/all'
+mechanicRoutes.get('/:id', getMechanicById);
+
+mechanicRoutes.delete('/:id', deleteMechanicById);
+mechanicRoutes.put('/:id', updateMechanicById);
+
+export default mechanicRoutes;

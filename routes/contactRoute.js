@@ -1,7 +1,7 @@
-import { createContact,getAllContact,getContactById,deleteContactById,updateContactById } from "../controllers/contactControllers.js";
+import { createContact,getAllContact,getContactById,deleteContactById,updateContactById } from "../controllers/contactControllerl.js";
 import express from "express";
-import { admin } from "../middlewares/roleIdentification.js";
-import { auth } from "../middlewares/tokenVerification.js";
+import { admin } from "../middleware/roleIdentification.js";
+import { auth } from "../middleware/tokenVerification.js";
 
 const contactRouter=express.Router();
 
