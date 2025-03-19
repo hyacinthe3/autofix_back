@@ -4,9 +4,12 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import userRouter from './routes/userRoute.js'
 import cors from "cors";
-import { createContact, getAllContact } from './controllers/contactControllerl.js';
-import GarageRouter from './routes/garageRoute.js';
+import contactRouter from './routes/contactRoutes.js';
 import mechanicRoutes from './routes/mechanicRoute.js';
+import adminRouter from './routes/adminRoutes.js';
+import garageRoutes from "./routes/garageRoute.js";
+import requestRoutes from "./routes/requestRoutes.js";
+
 
 dotenv.config();
 const port = process.env.PORT || 5000
@@ -25,10 +28,16 @@ app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use("/", userRouter);
-app.use("/garage", GarageRouter);
-app.use("/contact", createContact);
-app.use("/contact", getAllContact);
+app.use("/contact", contactRouter);
 app.use('/mechanic', mechanicRoutes);
+
+app.use("/garages", garageRoutes);
+app.use("/requests", requestRoutes);
+
+
+
+app.use('/admin', adminRouter);
+app.use('/api', requestRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => {

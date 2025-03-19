@@ -1,7 +1,9 @@
 import Garage from '../models/garageModel.js';
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from "cloudinary";
+import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
+import '../models/garageModel.js'
 
 dotenv.config();
 
@@ -11,7 +13,11 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET, // Fixed Typo
 });
 
-export const registerGarage= async (req, res) => {
+
+
+
+
+export const registerGarage = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Certificate required" });
@@ -21,11 +27,9 @@ export const registerGarage= async (req, res) => {
             folder: "certificates"
         });
 
-        console.log("Cloudinary Response:", cloudinaryResult);
+        const { GarageNames, GaragePassword, GaragetinNumber, location } = req.body;
 
-        const { GarageNames, GaragePassword, GaragetinNumber, location, specialisation } = req.body;
-
-        // Check if user already exists
+        // Check if garage already exists
         const existingGarage = await Garage.findOne({ GaragetinNumber });
         if (existingGarage) {
             return res.status(400).json({ message: 'Garage already registered with this tin number' });
@@ -34,27 +38,37 @@ export const registerGarage= async (req, res) => {
         // Encrypt password
         const hashedPassword = await bcrypt.hash(GaragePassword, 10);
 
-        // Save garage to database
+        // Create the garage object
         const garage = new Garage({
             GarageNames,
             GaragePassword: hashedPassword,
-            GaragetinNumber,  // Add this line
+            GaragetinNumber,
             location,
-            specialisation,
-            certification: cloudinaryResult.secure_url, // Save file path
+            certification: cloudinaryResult.secure_url,
         });
-        
 
+        // Generate JWT token
+        const token = jwt.sign(
+            { garageId: garage._id, GaragetinNumber: garage.GaragetinNumber },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        // Assign the token to the garage object
+        garage.token = token;
+
+        // Save garage to database with token
         await garage.save();
 
         res.status(201).json({
-            message: 'Garage registered successfully!',
+            message: 'Garage registered successfully! Wait for Admin approval.',
             garage: {
                 _id: garage._id,
                 GarageNames: garage.GarageNames,
                 GaragetinNumber: garage.GaragetinNumber,
                 location: garage.location,
                 specialisation: garage.specialisation,
+                token: garage.token // Now this will be saved in MongoDB
             },
         });
 
@@ -64,111 +78,84 @@ export const registerGarage= async (req, res) => {
     }
 };
 
-export const GarageLogin = async (req, res) => {
-    try {
-        const { GaragetinNumber, GaragePassword } = req.body;
-        const garage = await Garage.findOne({ GaragetinNumber});
 
+export const GarageLogin = async (req, res) => {
+    const { GaragetinNumber, GaragePassword } = req.body;
+
+    try {
+        // Find garage by TIN number
+        const garage = await Garage.findOne({ GaragetinNumber });
         if (!garage) {
-            return res.status(404).json({ message: "garage not found" });
+            return res.status(404).json({ message: "Garage not found" });
         }
 
+        // ✅ Fix: Check the correct field name
+        if (garage.approvalStatus !== 'approved') {
+            return res.status(403).json({ message: "Garage not approved. Please wait for admin approval." });
+        }
+
+        // Compare password
         const isMatch = await bcrypt.compare(GaragePassword, garage.GaragePassword);
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid credentials. Please check your TIN and password." });
         }
 
-        const garageResponse = {
-            _id: garage._id,
-            GarageNames: garage.GarageNames,
-            GaragetinNumber: garage.GaragetinNumber,
-        };
+        // Generate JWT token
+        const token = jwt.sign({ id: garage._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ garage: garageResponse });
-
+        res.json({ message: "Login successful", token, garage });
     } catch (error) {
-        console.error('Error in garage registration:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-    
 };
 
 
 
 export const getAllGarages = async (req, res) => {
-  try {
-    // Fetch all garage from the database
-    const garage = await Garage.find(); 
-    res.status(200).json({ success: true, garage });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
-  }
-};
-
-
-
-export const getGarageById = async (req, res) => {
     try {
-        const garage = await Garage.findById(req.params.id);
-
-        if (!garage) {
-            return res.status(404).json({ message: 'Garage not found' });
-        }
-
-        res.status(200).json({ success: true, garage });
+        const garages = await Garage.find();
+        res.status(200).json(garages);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
-
-
-export const updateGarageById = async (req, res) => {
+// Approve a garage
+export const approveGarage = async (req, res) => {
     try {
-        const { GarageNames, GaragePassword, GaragetinNumber, location, specialisation } = req.body;
-
-        const garage = await Garage.findById(req.params.id);
-
+        const { id } = req.params;
+        const garage = await Garage.findById(id);
+        
         if (!garage) {
-            return res.status(404).json({ message: 'Garage not found' });
+            return res.status(404).json({ message: "Garage not found" });
         }
 
-        // Optionally handle password change
-        if (GaragePassword) {
-            const hashedPassword = await bcrypt.hash(GaragePassword, 10);
-            garage.GaragePassword = hashedPassword;
-        }
-
-        // Update garage fields
-        garage.GarageNames = GarageNames || garage.GarageNames;
-        garage.GaragetinNumber = GaragetinNumber || garage.GaragetinNumber;
-        garage.location = location || garage.location;
-        garage.specialisation = specialisation || garage.specialisation;
-
+        garage.approvalStatus = "approved";
         await garage.save();
 
-        res.status(200).json({
-            message: 'Garage updated successfully!',
-            garage,
-        });
+        res.status(200).json({ message: "Garage approved successfully" });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
 
 
-
-export const deleteGarageById = async (req, res) => {
+// Reject a garage
+export const rejectGarage = async (req, res) => {
     try {
-        const garage = await Garage.findByIdAndDelete(req.params.id);
-
+        const { id } = req.params;
+        const garage = await Garage.findById(id);
+        
         if (!garage) {
-            return res.status(404).json({ message: 'Garage not found' });
+            return res.status(404).json({ message: "Garage not found" });
         }
 
-        res.status(200).json({ message: 'Garage deleted successfully' });
+        garage.approvalStatus = "rejected";
+        await garage.save();
+
+        res.status(200).json({ message: "Garage rejected successfully" });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };

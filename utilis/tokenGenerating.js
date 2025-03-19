@@ -1,13 +1,13 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-
+  
 dotenv.config();
 
-export const generateAccessToken = (user) =>{
+export const generateAccessToken = (garage) =>{
     return jwt.sign(
-        {_id:user._id,userEmail : user.userEmail,userRole:user.userRole},
+        {_id:garage._id, role: 'garage', status: garage.approvalStatus},
         process.env.JWT_SECRET,
-        { expiresIn: "7h" }
+        { expiresIn: "7d" }
 
     );
 };

@@ -17,19 +17,19 @@ export const auth=async(req,res,next) =>{
     }
     try{
         const decoded =jwt.verify(token,process.env.JWT_SECRET);
-        const user = await User.findOne({
+        const garage = await Garage.findOne({
             _id:decoded._id,
             "tokens.accessToken":token,
         });
 
-        if (!user){
+        if (!garage){
             return res
             .status(401)
             .json({message:"User not found or token invalid"})
         }
 
         req.token = token;
-        req.user = user;
+        req.user = garage;
         next();
     }
     catch(error){

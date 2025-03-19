@@ -1,73 +1,77 @@
-import Contact from "../models/contactModel.js";
+import transporter from '../utilis/mailer.js';
+import Contact from '../models/contactModel.js';  // Adjust if the path is different
 
+// Create a new contact and send an email
 export const createContact = async (req, res) => {
-    try {
-        const { name, email, subject, message} = req.body;
-        const newContact = new Contact({ name, email, subject, message});
+  try {
+    const { name, email, subject, message } = req.body;
+    const newContact = new Contact({ name, email, subject, message });
 
-        await newContact.save();
+    await newContact.save();
 
-        res.status(201).json({ success: true, message: "contact created successfully", Contact: newContact });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
-    }
-}
+    // Send email using Mailtrap
+    const mailOptions = {
+      from: '"Contact Form" <no-reply@yourwebsite.com>', // sender address
+      to: 'hyacintheihimbazwe98@gmail.com', // Replace with your email
+      subject: `New Contact Form Submission: ${subject}`, // Subject line
+      text: `You have a new contact message from ${name}:
 
-export const getAllContact = async (req, res) => {
-    try {
-        const contacts = await Contact.find();
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+Message: ${message}`, // Plain text body
+    };
 
-        if (contacts.length === 0) {
-            return res.status(404).json({ success: false, message: "No contacts found" });
-        }
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log('Error sending email:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send email notification.',
+          error: error.message,
+        });
+      }
+      console.log('Message sent:', info.response);
 
-        res.status(200).json({ success: true, contacts });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
-    }
+      res.status(201).json({
+        success: true,
+        message: 'Contact created successfully and email sent!',
+        contact: newContact,
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
 };
 
-export const getContactById = async (req, res) => {
+// Get all contacts
+export const getAllContacts = async (req, res) => {
+  try {
+    const contacts = await Contact.find().sort({ createdAt: -1 }); // Get all contacts sorted by most recent
+    res.status(200).json({
+      success: true,
+      count: contacts.length,
+      contacts,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
+
+export const deleteContact = async (req, res) => {
     try {
-        const { id } = req.params;
-        const contacts = await Contact.findById(id);
-        if (!contacts) {
-            return res.status(404).json({ success: false, message: "contact not found" });
-        }
-        res.status(200).json({ success: true, contacts });
+      const contactId = req.params.id;
+      const contact = await Contact.findByIdAndDelete(contactId);
+  
+      if (!contact) {
+        return res.status(404).json({ success: false, message: 'Contact not found' });
+      }
+  
+      res.status(200).json({ success: true, message: 'Contact deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
-    catch (error) {
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
-    }
-
-}
-
-export const deleteContactById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const contact = await Contact.findByIdAndDelete(id);
-        if (!contact) {
-            return res.status(404).json({ success: false, message: "contact not found" });
-        }
-        res.status(200).json({ success: true, message: "contact deleted successfully" });
-    }
-    catch (error) {
-        res.status(200).json({ success: false, message: "server error", error: error.message });
-
-    }
-}
-
-export const updateContactById=async(req,res)=>{
-    try {
-        const { id } = req.params;
-        const updatedData = await Contact.findByIdAndUpdate(id,req.body);
-        if (!updatedData) {
-            return res.status(404).json({ success: false, message: "contact not found" });
-        }
-        res.status(201).json({ success: true, message: "contact updated successfully" });
-    }
-    catch (error) {
-        res.status(200).json({ success: false, message: "server error", error: error.message });
-
-    }
-}
+  };
