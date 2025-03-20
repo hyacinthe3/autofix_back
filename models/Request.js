@@ -9,10 +9,12 @@ const requestSchema = new mongoose.Schema(
       coordinates: { type: [Number], required: true } // [longitude, latitude]
     },
     contact: { type: String, required: true },
+    assignedGarage: { type: mongoose.Schema.Types.ObjectId, ref: "Garage", default: null }, // 👈 New field
   },
   { timestamps: true }
 );
 
-const Request = mongoose.model('Request', requestSchema);
+const Request = mongoose.model("Request", requestSchema);
 
 export default Request;
+
