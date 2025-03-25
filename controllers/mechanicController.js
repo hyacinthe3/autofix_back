@@ -56,14 +56,17 @@ const getAllMechanics = async (req, res) => {
 
 
 
+// Get mechanic by ID (Ensure the mechanic belongs to the logged-in garage)
+// Ensure that authentication middleware is being used and req.user is set
 
 // Get mechanic by ID
 const getMechanicById = async (req, res) => {
   try {
-    const mechanic = await Mechanic.findById(req.params.id);
+    console.log(`Fetching mechanic with ID: ${req.params.id} for garage: ${req.user.id}`);
+    const mechanic = await Mechanic.findOne({ _id: req.params.id, garageId: req.user.id });
 
     if (!mechanic) {
-      return res.status(404).json({ message: 'Mechanic not found' });
+      return res.status(404).json({ message: 'Mechanic not found or unauthorized' });
     }
 
     res.status(200).json(mechanic);
@@ -76,17 +79,14 @@ const getMechanicById = async (req, res) => {
   }
 };
 
-
-
-
-
 // Delete mechanic by ID
 const deleteMechanicById = async (req, res) => {
   try {
-    const mechanic = await Mechanic.findByIdAndDelete(req.params.id);
+    console.log(`Deleting mechanic with ID: ${req.params.id} for garage: ${req.user.id}`);
+    const mechanic = await Mechanic.findOneAndDelete({ _id: req.params.id, garageId: req.user.id });
 
     if (!mechanic) {
-      return res.status(404).json({ message: 'Mechanic not found' });
+      return res.status(404).json({ message: 'Mechanic not found or unauthorized' });
     }
 
     res.status(200).json({ message: 'Mechanic deleted successfully' });
@@ -99,24 +99,20 @@ const deleteMechanicById = async (req, res) => {
   }
 };
 
-
-
-
-
-
 // Update mechanic by ID
 const updateMechanicById = async (req, res) => {
   try {
     const { fullName, phoneNumber, specialization } = req.body;
 
-    const mechanic = await Mechanic.findByIdAndUpdate(
-      req.params.id,
+    console.log(`Updating mechanic with ID: ${req.params.id} for garage: ${req.user.id}`);
+    const mechanic = await Mechanic.findOneAndUpdate(
+      { _id: req.params.id, garageId: req.user.id },
       { fullName, phoneNumber, specialization },
       { new: true }
     );
 
     if (!mechanic) {
-      return res.status(404).json({ message: 'Mechanic not found' });
+      return res.status(404).json({ message: 'Mechanic not found or unauthorized' });
     }
 
     res.status(200).json({ message: 'Mechanic updated successfully', mechanic });
@@ -128,6 +124,7 @@ const updateMechanicById = async (req, res) => {
     });
   }
 };
+
 
 export {
   registerMechanic,

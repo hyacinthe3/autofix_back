@@ -1,20 +1,28 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const requestSchema = new mongoose.Schema(
-  {
-    carIssue: { type: String, required: true },
-    carModel: { type: String, required: true },
-    location: {
-      type: { type: String, enum: ['Point'], required: true },
-      coordinates: { type: [Number], required: true } // [longitude, latitude]
+const RequestSchema = new mongoose.Schema({
+  carIssue: { type: String, required: true },
+  carModel: { type: String, required: true },
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"], // The geometry type is "Point"
+      default: "Point",
     },
-    contact: { type: String, required: true },
-    assignedGarage: { type: mongoose.Schema.Types.ObjectId, ref: "Garage", default: null }, // 👈 New field
+    coordinates: { 
+      type: [Number], // [longitude, latitude]
+      required: true,
+    },
+    address: { type: String, required: true }, // Address is also stored
   },
-  { timestamps: true }
-);
+  contact: { type: String, required: true },
+  status: { type: String, default: "pending" }, // Default status is "pending"
+  assignedGarage: { type: mongoose.Schema.Types.ObjectId, ref: "Garage" }, // Reference to Garage
+  assignedMechanic: { type: mongoose.Schema.Types.ObjectId, ref: "Mechanic" }, // Reference to Mechanic
+}, { timestamps: true });
 
-const Request = mongoose.model("Request", requestSchema);
+// Create a geospatial index on the location field for efficient queries
+RequestSchema.index({ location: "2dsphere" });
 
+const Request = mongoose.model("Request", RequestSchema);
 export default Request;
-

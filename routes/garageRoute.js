@@ -12,7 +12,7 @@ const garageRoutes = express.Router();
 
 // ✅ Configure Multer for Cloudinary
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
     folder: "garage_certifications",
     format: async () => "pdf",
@@ -20,6 +20,21 @@ const storage = new CloudinaryStorage({
   },
 });
 const upload = multer({ storage });
+
+// ✅ Middleware for Authentication
+const authenticateGarage = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secretKey");
+    req.garageId = decoded.id;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: "Invalid token" });
+  }
+};
 
 // ✅ Garage Registration Route
 garageRoutes.post("/register", upload.single("certification"), async (req, res) => {
@@ -48,7 +63,7 @@ garageRoutes.post("/register", upload.single("certification"), async (req, res) 
 
     // ✅ Hash password before saving
     const hashedPassword = await bcrypt.hash(GaragePassword, 10);
-    
+
     // ✅ Save certification URL from Cloudinary
     const certificationUrl = req.file ? req.file.path : null;
 
@@ -67,7 +82,22 @@ garageRoutes.post("/register", upload.single("certification"), async (req, res) 
     });
 
     await newGarage.save();
-    res.status(201).json({ success: true, message: "Garage registered successfully!" });
+
+    // ✅ Generate token
+    const token = jwt.sign(
+      { 
+        id: newGarage._id, 
+        GarageName, 
+        GaragetinNumber, 
+        location: newGarage.location, 
+        certification: certificationUrl, 
+        Garagephone
+      },
+      process.env.JWT_SECRET || "secretKey",
+      { expiresIn: "1d" }
+    );
+
+    res.status(201).json({ success: true, message: "Garage registered successfully!", token });
 
   } catch (error) {
     console.error("Error saving garage:", error);
@@ -75,25 +105,39 @@ garageRoutes.post("/register", upload.single("certification"), async (req, res) 
   }
 });
 
-
 // ✅ Garage Login (with approval check)
 garageRoutes.post("/login", async (req, res) => {
   try {
     const { GaragetinNumber, GaragePassword } = req.body;
-
     const garage = await Garage.findOne({ GaragetinNumber });
-    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
 
-    if (garage.approvalStatus !== "approved") {
-      return res.status(403).json({ message: "Garage not approved. Please wait for admin approval." });
-    }
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
 
     const isMatch = await bcrypt.compare(GaragePassword, garage.GaragePassword);
     if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: garage._id }, process.env.JWT_SECRET || "defaultSecret", { expiresIn: "1d" });
+    if (garage.approvalStatus !== "approved") {
+      return res.status(403).json({ success: false, message: "Garage not approved yet." });
+    }
 
-    res.json({ success: true, token, garage });
+    const token = jwt.sign(
+      { id: garage._id, GaragetinNumber: garage.GaragetinNumber },
+      process.env.JWT_SECRET || "secretKey",
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      success: true,
+      token,
+      garage: {
+        id: garage._id,
+        GarageName: garage.GarageName,
+        GaragetinNumber: garage.GaragetinNumber,
+        location: garage.location,
+        certification: garage.certification,
+        Garagephone: garage.Garagephone,
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
@@ -105,7 +149,19 @@ garageRoutes.get("/all", async (req, res) => {
     const garages = await Garage.find();
     res.status(200).json(garages);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+// ✅ Get Garage By ID
+garageRoutes.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const garage = await Garage.findById(id);
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
+    res.status(200).json(garage);
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching garage data", error: error.message });
   }
 });
 
@@ -115,14 +171,14 @@ garageRoutes.put("/approve/:id", async (req, res) => {
     const { id } = req.params;
     const garage = await Garage.findById(id);
 
-    if (!garage) return res.status(404).json({ message: "Garage not found" });
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
 
     garage.approvalStatus = "approved";
     await garage.save();
 
-    res.status(200).json({ message: "Garage approved successfully" });
+    res.status(200).json({ success: true, message: "Garage approved successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -132,19 +188,26 @@ garageRoutes.put("/reject/:id", async (req, res) => {
     const { id } = req.params;
     const garage = await Garage.findById(id);
 
-    if (!garage) return res.status(404).json({ message: "Garage not found" });
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
 
     garage.approvalStatus = "rejected";
     await garage.save();
 
-    res.status(200).json({ message: "Garage rejected successfully" });
+    res.status(200).json({ success: true, message: "Garage rejected successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
 
-
-
-
+// ✅ Protected Garage Profile Route
+garageRoutes.get("/profile", authenticateGarage, async (req, res) => {
+  try {
+    const garage = await Garage.findById(req.garageId);
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
+    res.status(200).json(garage);
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+});
 
 export default garageRoutes;

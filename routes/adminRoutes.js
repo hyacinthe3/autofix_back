@@ -7,4 +7,5 @@ const adminRouter = express.Router();
 adminRouter.get('/garage', getAllGarage);
 adminRouter.put('/garage/:id/status', updateGarageStatus);
 
+
 export default adminRouter;
