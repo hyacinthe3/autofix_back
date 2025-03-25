@@ -18,7 +18,7 @@ const RequestSchema = new mongoose.Schema({
   contact: { type: String, required: true },
   status: { type: String, default: "pending" }, // Default status is "pending"
   assignedGarage: { type: mongoose.Schema.Types.ObjectId, ref: "Garage" }, // Reference to Garage
-  assignedMechanic: { type: mongoose.Schema.Types.ObjectId, ref: "Mechanic" }, // Reference to Mechanic
+  assignedMechanics: [{ type: mongoose.Schema.Types.ObjectId, ref: "Mechanic" }], // Array of mechanics
 }, { timestamps: true });
 
 // Create a geospatial index on the location field for efficient queries

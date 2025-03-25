@@ -4,6 +4,7 @@ import axios from "axios";
 import Request from "../models/Request.js";
 import Garage from "../models/garageModel.js";
 import haversine from "haversine-distance";
+import Mechanic from "../models/mechanicModel.js"; 
 import cors from "cors"; // Enable CORS
 
 const requestRoutes = express.Router();
@@ -135,6 +136,61 @@ requestRoutes.get("/garages/:garageId/requests", async (req, res) => {
   } catch (error) {
     console.error("Error fetching garage requests:", error);
     res.status(500).json({ success: false, message: "Error fetching requests", error: error.message });
+  }
+});
+
+
+
+// 📌 Get all mechanics for a specific garage
+requestRoutes.get("/garages/:garageId/mechanics", async (req, res) => {
+  try {
+    const { garageId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(garageId)) {
+      return res.status(400).json({ success: false, message: "Invalid garage ID" });
+    }
+
+    // Find mechanics associated with this garage
+    const mechanics = await Mechanic.find({ garageId });
+
+    if (!mechanics.length) {
+      return res.status(404).json({ success: false, message: "No mechanics found for this garage" });
+    }
+
+    res.json({ success: true, mechanics });
+  } catch (error) {
+    console.error("Error fetching mechanics:", error);
+    res.status(500).json({ success: false, message: "Error fetching mechanics", error: error.message });
+  }
+});
+
+
+
+
+
+requestRoutes.post("/assign-mechanic", async (req, res) => {
+  const { requestId, mechanicId } = req.body;
+
+  try {
+      const request = await Request.findById(requestId);
+      if (!request) {
+          return res.status(404).json({ success: false, message: "Request not found" });
+      }
+
+      const mechanic = await Mechanic.findById(mechanicId);
+      if (!mechanic) {
+          return res.status(404).json({ success: false, message: "Mechanic not found" });
+      }
+
+      // Assign mechanic and update status
+      request.assignedMechanic = mechanicId;
+      request.status = "Assigned";
+      await request.save();
+
+      res.status(200).json({ success: true, message: "Mechanic assigned successfully" });
+  } catch (error) {
+      console.error("Error assigning mechanic:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
