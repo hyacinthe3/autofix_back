@@ -35,7 +35,6 @@ app.use("/garages", garageRoutes);
 app.use("/requests", requestRoutes);
 
 
-
 app.use('/admin', adminRouter);
 app.use('/api', requestRoutes);
 

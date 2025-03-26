@@ -214,26 +214,21 @@ garageRoutes.get("/profile", authenticateGarage, async (req, res) => {
 
 
 // Route to get the count of total, approved, and pending garages
-garageRoutes.get('/garages', async (req, res) => {
+garageRoutes.get('/garages/all', async (req, res) => {
   try {
-    // Get total number of garages
+    console.log("Fetching garage counts..."); // ✅ Debugging
+
     const totalGarages = await Garage.countDocuments();
-
-    // Get the number of approved garages
     const approvedGarages = await Garage.countDocuments({ approvalStatus: 'approved' });
-
-    // Get the number of pending garages
     const pendingGarages = await Garage.countDocuments({ approvalStatus: 'pending' });
 
-    // Return the counts as a JSON response
-    return res.status(200).json({
-      totalGarages,
-      approvedGarages,
-      pendingGarages,
-    });
+    console.log({ totalGarages, approvedGarages, pendingGarages }); // ✅ Debugging
+
+    return res.status(200).json({ totalGarages, approvedGarages, pendingGarages });
   } catch (error) {
     console.error('Error fetching garage counts:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 export default garageRoutes;

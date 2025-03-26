@@ -2,7 +2,7 @@
 import express from 'express';
 import authMiddleware from "../middleware/authMiddleware.js";
 import Mechanic from "../models/mechanicModel.js";
-import {getMechanicById,deleteMechanicById,updateMechanicById,} from '../controllers/mechanicController.js';
+import {getMechanicById,deleteMechanicById,updateMechanicById,countMechanics} from '../controllers/mechanicController.js';
 
 const mechanicRoutes = express.Router();
 
@@ -49,6 +49,7 @@ mechanicRoutes.get("/all", authMiddleware, async (req, res) => {
 
 
 mechanicRoutes.get('/:id',authMiddleware, getMechanicById);
+mechanicRoutes.get('/mechanics/count', countMechanics);
 
 mechanicRoutes.delete('/:id', authMiddleware,deleteMechanicById);
 mechanicRoutes.put('/:id', authMiddleware,updateMechanicById);

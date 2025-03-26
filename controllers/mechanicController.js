@@ -126,10 +126,26 @@ const updateMechanicById = async (req, res) => {
 };
 
 
+// Count mechanics
+const countMechanics = async (req, res) => {
+  try {
+    const mechanicCount = await Mechanic.countDocuments(); // Count total mechanics
+    res.status(200).json({ mechanicCount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to count mechanics.',
+      error: error.message,
+    });
+  }
+};
+
+
 export {
   registerMechanic,
   getAllMechanics,
   getMechanicById,
   deleteMechanicById,
   updateMechanicById,
+  countMechanics,
 };
