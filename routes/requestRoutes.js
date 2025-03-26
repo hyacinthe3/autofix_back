@@ -194,4 +194,27 @@ requestRoutes.post("/assign-mechanic", async (req, res) => {
   }
 });
 
+
+
+
+// 📌 Get the total number of requests assigned to a garage
+requestRoutes.get("/garages/:garageId/requests/count", async (req, res) => {
+  try {
+    const { garageId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(garageId)) {
+      return res.status(400).json({ success: false, message: "Invalid garage ID" });
+    }
+
+    // Count requests assigned to the garage
+    const requestCount = await Request.countDocuments({ assignedGarage: garageId });
+
+    res.json({ success: true, totalRequests: requestCount });
+  } catch (error) {
+    console.error("Error counting garage requests:", error);
+    res.status(500).json({ success: false, message: "Error counting requests", error: error.message });
+  }
+});
+
+
 export default requestRoutes;
