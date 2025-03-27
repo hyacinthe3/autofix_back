@@ -61,6 +61,23 @@ garageRoutes.post("/register", upload.single("certification"), async (req, res) 
 
     const [longitude, latitude] = parsedLocation.coordinates;
 
+    // ✅ Check if the TIN Number or Phone already exists in the database
+    const existingGarage = await Garage.findOne({
+      $or: [
+        { GaragetinNumber },  // Check by TIN Number
+        { Garagephone }       // Check by Phone Number
+      ]
+    });
+
+    if (existingGarage) {
+      if (existingGarage.GaragetinNumber === GaragetinNumber) {
+        return res.status(400).json({ success: false, message: "Garage TIN Number already exists" });
+      }
+      if (existingGarage.Garagephone === Garagephone) {
+        return res.status(400).json({ success: false, message: "Garage Phone Number already exists" });
+      }
+    }
+
     // ✅ Hash password before saving
     const hashedPassword = await bcrypt.hash(GaragePassword, 10);
 
@@ -105,13 +122,14 @@ garageRoutes.post("/register", upload.single("certification"), async (req, res) 
   }
 });
 
+
 // ✅ Garage Login (with approval check)
 garageRoutes.post("/login", async (req, res) => {
   try {
     const { GaragetinNumber, GaragePassword } = req.body;
     const garage = await Garage.findOne({ GaragetinNumber });
 
-    if (!garage) return res.status(404).json({ success: false, message: "Garage not found" });
+    if (!garage) return res.status(404).json({ success: false, message: "Garage not found or it is not approved by admin yet" });
 
     const isMatch = await bcrypt.compare(GaragePassword, garage.GaragePassword);
     if (!isMatch) return res.status(401).json({ success: false, message: "Invalid credentials" });
