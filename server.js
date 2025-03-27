@@ -9,6 +9,7 @@ import mechanicRoutes from './routes/mechanicRoute.js';
 import adminRouter from './routes/adminRoutes.js';
 import garageRoutes from "./routes/garageRoute.js";
 import requestRoutes from "./routes/requestRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
 
 
 dotenv.config();
@@ -34,7 +35,7 @@ app.use('/mechanic', mechanicRoutes);
 app.use("/garages", garageRoutes);
 app.use("/requests", requestRoutes);
 
-
+app.use("/messages", messageRoutes);
 
 app.use('/admin', adminRouter);
 app.use('/api', requestRoutes);
