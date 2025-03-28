@@ -24,6 +24,7 @@ const getAddressFromCoordinates = async (lat, lon) => {
 };
 
 // Create a new request
+// Create a new request
 requestRoutes.post("/send", async (req, res) => {
   try {
     const { carIssue, carModel, location, contact } = req.body;
@@ -37,22 +38,38 @@ requestRoutes.post("/send", async (req, res) => {
     await newRequest.save();
 
     const garages = await Garage.find({ approvalStatus: 'approved' });
-    const garagesWithDistance = garages.map((garage) => {
-      if (!garage.location || !garage.location.coordinates || garage.location.coordinates.length !== 2) {
-        return null;
-      }
-      const distance = haversine(location.coordinates, garage.location.coordinates) / 1000;
-      return { ...garage.toObject(), distance };
-    }).filter(garage => garage !== null);
+    const garagesWithDetails = await Promise.all(
+      garages.map(async (garage) => {
+        if (!garage.location || !garage.location.coordinates || garage.location.coordinates.length !== 2) {
+          return null;
+        }
 
-    garagesWithDistance.sort((a, b) => a.distance - b.distance);
+        const distance = haversine(location.coordinates, garage.location.coordinates) / 1000;
+        const garageAddress = await getAddressFromCoordinates(garage.location.coordinates[1], garage.location.coordinates[0]);
 
-    res.status(201).json({ success: true, message: "Request sent successfully!", nearestGarages: garagesWithDistance, requestId: newRequest._id });
+        return {
+          ...garage.toObject(),
+          distance,
+          address: garageAddress, // Include address instead of just coordinates
+        };
+      })
+    );
+
+    const filteredGarages = garagesWithDetails.filter(garage => garage !== null);
+    filteredGarages.sort((a, b) => a.distance - b.distance);
+
+    res.status(201).json({
+      success: true,
+      message: "Request sent successfully!",
+      nearestGarages: filteredGarages,
+      requestId: newRequest._id
+    });
   } catch (error) {
     console.error("Error sending request:", error);
     res.status(500).json({ success: false, message: "Error sending request" });
   }
 });
+
 
 // Assign request to a garage
 requestRoutes.post("/assign", async (req, res) => {
