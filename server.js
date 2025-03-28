@@ -10,6 +10,7 @@ import adminRouter from './routes/adminRoutes.js';
 import garageRoutes from "./routes/garageRoute.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import supportRouter from "./routes/supportRoutes.js";
 
 
 dotenv.config();
@@ -36,7 +37,7 @@ app.use("/garages", garageRoutes);
 app.use("/requests", requestRoutes);
 
 app.use("/messages", messageRoutes);
-
+app.use("/contacts", supportRouter);
 app.use('/admin', adminRouter);
 app.use('/api', requestRoutes);
 
