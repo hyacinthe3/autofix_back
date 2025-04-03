@@ -1,4 +1,3 @@
-
 import Request from '../models/Request.js';
 
 export const createRequest = async (req, res) => {

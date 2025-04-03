@@ -24,7 +24,6 @@ const getAddressFromCoordinates = async (lat, lon) => {
 };
 
 // Create a new request
-// Create a new request
 requestRoutes.post("/send", async (req, res) => {
   try {
     const { carIssue, carModel, location, contact } = req.body;

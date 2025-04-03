@@ -249,4 +249,59 @@ garageRoutes.get('/garages/all', async (req, res) => {
   }
 });
 
+
+
+
+
+// ✅ Update Garage Info (Authenticated Route)
+garageRoutes.put("/update", authenticateGarage, upload.single("certification"), async (req, res) => {
+  try {
+    const { GarageName, Garagephone, location } = req.body;
+
+    if (!GarageName || !Garagephone || !location) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    // ✅ Parse location from JSON string
+    let parsedLocation;
+    try {
+      parsedLocation = JSON.parse(location);
+    } catch (error) {
+      return res.status(400).json({ success: false, message: "Invalid location format" });
+    }
+
+    if (!parsedLocation.coordinates || !Array.isArray(parsedLocation.coordinates)) {
+      return res.status(400).json({ success: false, message: "Location coordinates are required" });
+    }
+
+    const [longitude, latitude] = parsedLocation.coordinates;
+
+    // ✅ Find and update the garage
+    const updatedGarage = await Garage.findByIdAndUpdate(
+      req.garageId, 
+      {
+        GarageName,
+        Garagephone,
+        location: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+          address: parsedLocation.address
+        },
+        certification: req.file ? req.file.path : undefined, // Update certification if provided
+      },
+      { new: true }
+    );
+
+    if (!updatedGarage) {
+      return res.status(404).json({ success: false, message: "Garage not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Garage updated successfully!", garage: updatedGarage });
+
+  } catch (error) {
+    console.error("Error updating garage:", error);
+    res.status(500).json({ success: false, message: "Error updating garage", error: error.message });
+  }
+});
+
 export default garageRoutes;
