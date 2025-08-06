@@ -4,9 +4,10 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec babel-node server.js",
-    "start": "nodemon server.js"
-  },
+  "dev": "nodemon --exec babel-node server.js",
+  "start": "babel-node server.js"
+}
+
   "engines": {
     "node": ">=14.17.0"
   },
@@ -37,7 +38,6 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
-    "nodemon": "^3.0.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
@@ -48,7 +48,8 @@
   "devDependencies": {
     "@babel/core": "^7.23.3",
     "@babel/preset-env": "^7.23.3",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "nodemon": "^3.1.10"
   },
   "description": ""
 }
